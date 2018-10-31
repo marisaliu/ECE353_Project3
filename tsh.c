@@ -1,7 +1,8 @@
 /* 
  * tsh - A tiny shell program with job control
  * 
- * <Put your name and login ID here>
+ * Dylan Banh dbanh@umass.edu
+ * Marisa Liu myliu@umass.edu
  */
 #include <stdio.h>
 #include <stdlib.h>
