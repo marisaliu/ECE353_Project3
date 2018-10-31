@@ -187,9 +187,12 @@ void eval(char *cmdline)
       int status;
       if(waitpid(pid,&status,0) <0) unix_error("waitfg: waitpid error");
     }
-    else printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
+    else{
+      printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
+    // waitfg(pid);
+     }
   }
-
+listjobs(jobs);
    return;
 }
 
@@ -276,6 +279,9 @@ void do_bgfg(char **argv)
  */
 void waitfg(pid_t pid)
 {
+  while(fgpid(jobs)){
+    sleep(1);
+  }
     return;
 }
 
@@ -293,14 +299,17 @@ void waitfg(pid_t pid)
 void sigchld_handler(int sig) 
 {
   int olderrno = errno;
-
-  while(waitpid(-1, NULL, 0) >0) {
+  pid_t pid;
+  while((pid = waitpid(-1, NULL,WNOHANG )) >0) {
     //sio_puts("Handler reaped child\n");
   }
   if(errno != ECHILD)
     //sio_error("waitpid error");
   sleep(1);
+printf("CHILD REAP");
+  deletejob(jobs, pid);
   errno = olderrno;   
+  
   return;
 }
 
