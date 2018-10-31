@@ -169,13 +169,11 @@ void eval(char *cmdline)
   char buf[MAXLINE];
   int bg;
   pid_t pid;
- printf("EVAL");
   strcpy(buf,cmdline);
-  bg = parseline(bg, argv);
+  bg = parseline(buf, argv);
   if (argv[0] == NULL) return;
 
   if(!builtin_cmd(argv)){
-	printf("TEST");
     if((pid = fork()) == 0){
       if(execve(argv[0], argv, environ) < 0){
 	printf("%s: Command not found.\n",argv[0]);
@@ -256,13 +254,11 @@ int parseline(const char *cmdline, char **argv)
  */
 int builtin_cmd(char **argv) 
 {
-printf("BUILT IN CMD");
   if(!strcmp(argv[0], "quit")){
-	printf("QUIT");
- exit(0);
-}
+    exit(0);
+  }
   if(!strcmp(argv[0], "&")) return 1;
-    return 0;     /* not a builtin command */
+ return 0;     /* not a builtin command */
 }
 
 /* 
@@ -294,7 +290,16 @@ void waitfg(pid_t pid)
  */
 void sigchld_handler(int sig) 
 {
-    return;
+  int olderrno = errno;
+
+  while(waitpid(-1, NULL, 0) >0) {
+    //sio_puts("Handler reaped child\n");
+  }
+  if(errno != ECHILD)
+    //sio_error("waitpid error");
+  sleep(1);
+  errno = olderrno;   
+  return;
 }
 
 /* 
