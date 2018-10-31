@@ -170,22 +170,24 @@ void eval(char *cmdline)
   int bg;
   pid_t pid;
   strcpy(buf,cmdline);
-  bg = parseline(buf, argv);
-  if (argv[0] == NULL) return;
+  bg = parseline(buf, argv);	
+  if (argv[0] == NULL) return;	//exit if empty line
 
   if(!builtin_cmd(argv)){
-    if((pid = fork()) == 0){
-      if(execve(argv[0], argv, environ) < 0){
+    if((pid = fork()) == 0){	//child process
+      setpgid(0,0);		//move child to own process group
+      if(execve(argv[0], argv, environ) < 0){	
 	printf("%s: Command not found.\n",argv[0]);
 	exit(0);
       }
     }
-
+  addjob(jobs, pid, bg, buf);
+ 
     if(!bg){
       int status;
       if(waitpid(pid,&status,0) <0) unix_error("waitfg: waitpid error");
     }
-    else printf("%d %s",pid, cmdline);
+    else printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
   }
 
    return;
