@@ -181,18 +181,21 @@ void eval(char *cmdline)
 	exit(0);
       }
     }
-  addjob(jobs, pid, bg, buf);
- 
+
+
     if(!bg){
       int status;
       if(waitpid(pid,&status,0) <0) unix_error("waitfg: waitpid error");
+     
     }
     else{
+      addjob(jobs, pid, bg, buf);    
+// waitfg(pid);
       printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
-    // waitfg(pid);
-     }
+        }
+  
   }
-listjobs(jobs);
+//listjobs(jobs);
    return;
 }
 
@@ -262,6 +265,10 @@ int builtin_cmd(char **argv)
   if(!strcmp(argv[0], "quit")){
     exit(0);
   }
+  if(!strcmp(argv[0], "jobs")){
+    listjobs(jobs);
+    exit(0);
+  }
   if(!strcmp(argv[0], "&")) return 1;
  return 0;     /* not a builtin command */
 }
@@ -282,7 +289,8 @@ void waitfg(pid_t pid)
   while(fgpid(jobs)){
     sleep(1);
   }
-    return;
+  //waitpid(pid,NULL,WNOHANG); 
+   return;
 }
 
 /*****************
@@ -301,14 +309,14 @@ void sigchld_handler(int sig)
   int olderrno = errno;
   pid_t pid;
   while((pid = waitpid(-1, NULL,WNOHANG )) >0) {
-    //sio_puts("Handler reaped child\n");
+    deletejob(jobs, pid);
+   //sio_puts("Handler reaped child\n");
   }
   if(errno != ECHILD)
     //sio_error("waitpid error");
   sleep(1);
-printf("CHILD REAP");
-  deletejob(jobs, pid);
-  errno = olderrno;   
+//printf("CHILD REAP");
+   errno = olderrno;   
   
   return;
 }
