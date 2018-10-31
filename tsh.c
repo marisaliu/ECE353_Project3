@@ -181,13 +181,17 @@ void eval(char *cmdline)
 	exit(0);
       }
     }
-  addjob(jobs, pid, bg, buf);
+printf("\n%d pid\n", pid);  
+addjob(jobs, pid, bg, buf);
  
     if(!bg){
       int status;
       if(waitpid(pid,&status,0) <0) unix_error("waitfg: waitpid error");
     }
-    else printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
+    else {
+      waitfg(pid);
+      printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
+    }
   }
 
    return;
@@ -276,7 +280,10 @@ void do_bgfg(char **argv)
  */
 void waitfg(pid_t pid)
 {
-    return;
+  while(fgpid(jobs)){ 	//fgpid returns 0 when no process in fg 
+    sleep(1); 
+  }
+  return;
 }
 
 /*****************
@@ -294,7 +301,7 @@ void sigchld_handler(int sig)
 {
   int olderrno = errno;
 
-  while(waitpid(-1, NULL, 0) >0) {
+  while(waitpid(-1, NULL, WNOHANG) >0) {
     //sio_puts("Handler reaped child\n");
   }
   if(errno != ECHILD)
