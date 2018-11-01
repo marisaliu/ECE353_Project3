@@ -170,7 +170,10 @@ void eval(char *cmdline)
   int bg;
   pid_t pid;
   strcpy(buf,cmdline);
-  bg = parseline(buf, argv);	
+  if( parseline(buf, argv)){
+    bg = 2;
+  }
+  else bg = 1;	
   if (argv[0] == NULL) return;	//exit if empty line
 
   if(!builtin_cmd(argv)){
@@ -183,12 +186,13 @@ void eval(char *cmdline)
     }
 
 
-    if(!bg){
+    if(bg == 1){
       int status;
       if(waitpid(pid,&status,0) <0) unix_error("waitfg: waitpid error");
      
     }
     else{
+//	printf("bg: %d \n", bg);
       addjob(jobs, pid, bg, buf);    
 // waitfg(pid);
       printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
