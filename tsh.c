@@ -185,15 +185,15 @@ void eval(char *cmdline)
       }
     }
 
-
+   addjob(jobs,pid,bg,buf);
     if(bg == 1){
       int status;
+ //     addjob(jobs,pid,bg,buf);
       if(waitpid(pid,&status,0) <0) unix_error("waitfg: waitpid error");
-     
+      deletejob(jobs,pid);     
     }
     else{
-//	printf("bg: %d \n", bg);
-      addjob(jobs, pid, bg, buf);    
+   //   addjob(jobs, pid, bg, buf);    
 // waitfg(pid);
       printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
         }
@@ -282,13 +282,13 @@ int builtin_cmd(char **argv)
  */
 void do_bgfg(char **argv) 
 {
-  int curjid = strtok(argv[1], "%");
+/*  int curjid = strtok(argv[1], "%");
   int curState = getjobjid(jobs,curjid)->state;
   if(curState == 1){
     getjobjid(jobs,curjid)->state = 2;
   }
   else getjobjid(jobs,curjid)->state = 1;
-    return;
+  */  return;
 }
 
 /* 
@@ -338,9 +338,12 @@ void sigchld_handler(int sig)
  */
 void sigint_handler(int sig) 
 {
+// listjobs(jobs);
   pid_t pid = fgpid(jobs);
-  kill(-pid,SIGINT);
-  printf("KILL");
+ // printf("PID: %d\n", pid);
+  kill(pid,sig);
+  printf("Job [%d] (%d) terminated by signal %d\n", pid2jid(pid), pid, sig);
+//listjobs(jobs);
   return;
 
 }
