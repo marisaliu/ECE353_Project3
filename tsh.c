@@ -282,6 +282,12 @@ int builtin_cmd(char **argv)
  */
 void do_bgfg(char **argv) 
 {
+  int curjid = strtok(argv[1], "%");
+  int curState = getjobjid(jobs,curjid)->state;
+  if(curState == 1){
+    getjobjid(jobs,curjid)->state = 2;
+  }
+  else getjobjid(jobs,curjid)->state = 1;
     return;
 }
 
@@ -332,7 +338,11 @@ void sigchld_handler(int sig)
  */
 void sigint_handler(int sig) 
 {
-    return;
+  pid_t pid = fgpid(jobs);
+  kill(-pid,SIGINT);
+  printf("KILL");
+  return;
+
 }
 
 /*
