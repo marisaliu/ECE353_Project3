@@ -274,6 +274,10 @@ int builtin_cmd(char **argv)
     listjobs(jobs);
     exit(0);
   }
+  if(!(strcmp(argv[0], "fg") || strcmp(argv[0], "bg"))){
+    do_bgfg(argv);
+    exit(0);
+  }
   if(!strcmp(argv[0], "&")) return 1;
  return 0;     /* not a builtin command */
 }
@@ -283,13 +287,24 @@ int builtin_cmd(char **argv)
  */
 void do_bgfg(char **argv) 
 {
-/*  int curjid = strtok(argv[1], "%");
-  int curState = getjobjid(jobs,curjid)->state;
+  int curjid = (int) strtok(argv[1], "%");
+/*  int curState = getjobjid(jobs,curjid)->state;
   if(curState == 1){
     getjobjid(jobs,curjid)->state = 2;
   }
   else getjobjid(jobs,curjid)->state = 1;
-  */  return;
+  */  
+  if(getjobjid(jobs, curjid)->state != ST) return; //job must be stopped
+  if(!strcmp(argv[0], "fg")){
+    getjobjid(jobs, curjid)->state = FG;
+    kill(getjobjid(jobs, curjid)->pid, SIGCONT);
+  }  
+  else if(!strcmp(argv[0], "bg")){
+    getjobjid(jobs, curjid)->state = BG;
+    kill(getjobjid(jobs, curjid)->pid, SIGCONT);
+  }
+  
+  return;
 }
 
 /* 
@@ -356,6 +371,7 @@ void sigtstp_handler(int sig)
 //listjobs(jobs);
   pid_t pid = fgpid(jobs);
   kill(-pid,sig);
+  getjobpid(jobs, pid)->state = ST;
 //listjobs(jobs);
   printf("Job [%d] (%d) stopped by signal %d\n", pid2jid(pid),pid, sig);
   return;
