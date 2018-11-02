@@ -268,17 +268,17 @@ int parseline(const char *cmdline, char **argv)
 int builtin_cmd(char **argv) 
 {
   if(!strcmp(argv[0], "quit")){
-    exit(0);
+    return 1;
   }
   if(!strcmp(argv[0], "jobs")){
     listjobs(jobs);
-    exit(0);
+    return 1;
   }
-  if(!(strcmp(argv[0], "fg") || strcmp(argv[0], "bg"))){
+  if((!strcmp(argv[0], "fg") || !strcmp(argv[0], "bg"))){
     do_bgfg(argv);
-    exit(0);
+    return 1;
   }
-  if(!strcmp(argv[0], "&")) return 1;
+//i  if(!strcmp(argv[0], "&")) return 1;
  return 0;     /* not a builtin command */
 }
 
@@ -287,16 +287,11 @@ int builtin_cmd(char **argv)
  */
 void do_bgfg(char **argv) 
 {
-  int curjid = (int) strtok(argv[1], "%");
-/*  int curState = getjobjid(jobs,curjid)->state;
-  if(curState == 1){
-    getjobjid(jobs,curjid)->state = 2;
-  }
-  else getjobjid(jobs,curjid)->state = 1;
-  */  
-  if(getjobjid(jobs, curjid)->state != ST) return; //job must be stopped
+  int curjid =atoi(argv[1] + 1);  
   if(!strcmp(argv[0], "fg")){
+//    printf("JID: %d\n", curjid);
     getjobjid(jobs, curjid)->state = FG;
+  printf("PID: %d", getjobjid(jobs,curjid)->pid);
     kill(getjobjid(jobs, curjid)->pid, SIGCONT);
   }  
   else if(!strcmp(argv[0], "bg")){
