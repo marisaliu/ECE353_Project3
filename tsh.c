@@ -189,8 +189,9 @@ void eval(char *cmdline)
     if(bg == 1){
       int status;
  //     addjob(jobs,pid,bg,buf);
-      if(waitpid(pid,&status,0) <0) unix_error("waitfg: waitpid error");
-      deletejob(jobs,pid);     
+      if(( waitpid(pid,&status,WUNTRACED)) <0) unix_error("waitfg: waitpid error");
+     if(!WIFSTOPPED(status)) deletejob(jobs,pid);     
+ //    printf("%d \n", status);
     }
     else{
    //   addjob(jobs, pid, bg, buf);    
@@ -319,7 +320,7 @@ void sigchld_handler(int sig)
   int olderrno = errno;
   pid_t pid;
   while((pid = waitpid(-1, NULL,WNOHANG )) >0) {
-    deletejob(jobs, pid);
+   // deletejob(jobs, pid);
    //sio_puts("Handler reaped child\n");
   }
   if(errno != ECHILD)
@@ -338,12 +339,9 @@ void sigchld_handler(int sig)
  */
 void sigint_handler(int sig) 
 {
-// listjobs(jobs);
   pid_t pid = fgpid(jobs);
- // printf("PID: %d\n", pid);
-  kill(pid,sig);
+  kill(-pid,sig);
   printf("Job [%d] (%d) terminated by signal %d\n", pid2jid(pid), pid, sig);
-//listjobs(jobs);
   return;
 
 }
@@ -355,7 +353,12 @@ void sigint_handler(int sig)
  */
 void sigtstp_handler(int sig) 
 {
-    return;
+//listjobs(jobs);
+  pid_t pid = fgpid(jobs);
+  kill(-pid,sig);
+//listjobs(jobs);
+  printf("Job [%d] (%d) stopped by signal %d\n", pid2jid(pid),pid, sig);
+  return;
 }
 
 /*********************
