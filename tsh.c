@@ -311,6 +311,7 @@ void do_bgfg(char **argv)
   else if(!strcmp(argv[0], "bg")){
     curJob->state = BG;
     kill(-curJob->pid, SIGCONT);
+    printf("[%d] (%d) %s", curJob->jid, curJob->pid, curJob->cmdline);
   }
   
   return;
@@ -345,8 +346,8 @@ void sigchld_handler(int sig){
   while((pid = waitpid(-1, &status,WNOHANG|WUNTRACED )) >0) {
     curJob = getjobpid(jobs,pid);
     if(WIFSTOPPED(status)){
-       curJob->state = ST;
        printf("Job [%d] (%d) stopped by signal 20\n", curJob->jid, curJob->pid);
+       curJob->state = ST;
     }
     if(WIFSIGNALED(status)){
       printf("Job [%d] (%d) terminated by signal 2\n",curJob->jid, curJob->pid);
@@ -367,7 +368,6 @@ void sigint_handler(int sig)
 {
   pid_t pid = fgpid(jobs);
   kill(-pid,sig);
- // printf("Job [%d] (%d) terminated by signal %d\n", pid2jid(pid), pid, sig);
   return;
 
 }
@@ -381,8 +381,6 @@ void sigtstp_handler(int sig)
 {
   pid_t pid = fgpid(jobs);
   kill(-pid,sig);
-  getjobpid(jobs, pid)->state = ST;
- // printf("Job [%d] (%d) stopped by signal %d\n", pid2jid(pid),pid, sig);
   return;
 }
 
