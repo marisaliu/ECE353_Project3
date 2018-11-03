@@ -171,30 +171,32 @@ void eval(char *cmdline)
   int bg;
   pid_t pid;
   strcpy(buf,cmdline);
-  if( parseline(buf, argv)){
+ //if parseline finds process should be in background, bg = 2
+  if(parseline(buf, argv)){
     bg = 2;
   }
+  //else process is in foreground
   else bg = 1;	
   if (argv[0] == NULL) return;	//exit if empty line
 
   if(!builtin_cmd(argv)){
     if((pid = fork()) == 0){	//child process
       setpgid(0,0);		//move child to own process group
-      if(execve(argv[0], argv, environ) < 0){	
-	printf("%s: Command not found.\n",argv[0]);
+      if(execve(argv[0], argv, environ) < 0){	//execute command
+	printf("%s: Command not found.\n",argv[0]); //if error, print error and exit
 	exit(0);
       }
     }
 
-   addjob(jobs,pid,bg,buf);
+    addjob(jobs,pid,bg,buf); 
     if(bg==1){
-      waitfg(pid);  
-  }
+      waitfg(pid);  		//wait to sync
+    }
     else{
       printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
         } 
   }
-   return;
+  return;
 }
 
 /* 
@@ -261,7 +263,7 @@ int parseline(const char *cmdline, char **argv)
 int builtin_cmd(char **argv) 
 {
   if(!strcmp(argv[0], "quit")){
-    return 1;
+    exit(0);
   }
   if(!strcmp(argv[0], "jobs")){
     listjobs(jobs);
@@ -280,6 +282,7 @@ int builtin_cmd(char **argv)
 void do_bgfg(char **argv) 
 {
   struct job_t *curJob;
+//error checking
   if(argv[1]==NULL){ 
     printf("%s command requires PID or %%jobid argument\n", argv[0]);
     return;
@@ -296,18 +299,15 @@ void do_bgfg(char **argv)
     int curpid = atoi(argv[1]);
     if((curJob = getjobpid(jobs, curpid))==NULL) printf("(%s): No such process\n", argv[1]);
   }
-  if(curJob==NULL){
+  if(curJob==NULL) return;
 
-    return;
-  }
-  
+//fg  
   if(!strcmp(argv[0], "fg")){
     curJob->state = FG;
-    if(kill(-curJob->pid, SIGCONT)< 0){
-      printf("fg %s: no such job\n", argv[1]);
-    }
+    kill(-curJob->pid, SIGCONT)
     waitfg(curJob->pid);
-  }  
+  } 
+//bg 
   else if(!strcmp(argv[0], "bg")){
     curJob->state = BG;
     kill(-curJob->pid, SIGCONT);
@@ -322,7 +322,7 @@ void do_bgfg(char **argv)
  */
 void waitfg(pid_t pid)
 {
-  while(fgpid(jobs)==pid){
+  while(fgpid(jobs)==pid){ //wait until fg process changes
     sleep(1);
   } 
    return;
@@ -343,17 +343,17 @@ void sigchld_handler(int sig){
   pid_t pid;
   int status;
   struct job_t *curJob;
-  while((pid = waitpid(-1, &status,WNOHANG|WUNTRACED )) >0) {
+  while((pid = waitpid(-1, &status,WNOHANG|WUNTRACED )) >0) { //check terminated and get child pid
     curJob = getjobpid(jobs,pid);
-    if(WIFSTOPPED(status)){
+    if(WIFSTOPPED(status)){		//if process received stop signal
        printf("Job [%d] (%d) stopped by signal 20\n", curJob->jid, curJob->pid);
        curJob->state = ST;
     }
-    if(WIFSIGNALED(status)){
+    if(WIFSIGNALED(status)){		//if process receives int signal
       printf("Job [%d] (%d) terminated by signal 2\n",curJob->jid, curJob->pid);
       deletejob(jobs,pid);
     }
-    if(WIFEXITED(status)) deletejob(jobs,pid);
+    if(WIFEXITED(status)) deletejob(jobs,pid); //if process ended
   }
  
   return;
@@ -367,9 +367,8 @@ void sigchld_handler(int sig){
 void sigint_handler(int sig) 
 {
   pid_t pid = fgpid(jobs);
-  kill(-pid,sig);
+  kill(-pid,sig); //redirect signal
   return;
-
 }
 
 /*
@@ -380,7 +379,7 @@ void sigint_handler(int sig)
 void sigtstp_handler(int sig) 
 {
   pid_t pid = fgpid(jobs);
-  kill(-pid,sig);
+  kill(-pid,sig); //redirect signal
   return;
 }
 
