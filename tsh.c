@@ -188,16 +188,11 @@ void eval(char *cmdline)
 
    addjob(jobs,pid,bg,buf);
     if(bg==1){
-   // if(bg == 1 &&(getjobpid(jobs,pid)!=NULL)){
-     // int status;
-     // if(( waitpid(pid,&status,WUNTRACED)) <0) unix_error("waitfg: waitpid error");
-//      if(!WIFSTOPPED(status)) deletejob(jobs,pid);
-    waitfg(pid);  
+      waitfg(pid);  
   }
     else{
       printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
-        }
-//   addjob(jobs,pid,bg,buf); 
+        } 
   }
    return;
 }
@@ -351,10 +346,10 @@ void sigchld_handler(int sig){
     curJob = getjobpid(jobs,pid);
     if(WIFSTOPPED(status)){
        curJob->state = ST;
-   //    printf("Job [%d] (%d) stopped by signal 20\n", curJob->jid, curJob->pid);
+       printf("Job [%d] (%d) stopped by signal 20\n", curJob->jid, curJob->pid);
     }
     if(WIFSIGNALED(status)){
- //     printf("Job [%d] (%d) terminated by signal 2\n",curJob->jid, curJob->pid);
+      printf("Job [%d] (%d) terminated by signal 2\n",curJob->jid, curJob->pid);
       deletejob(jobs,pid);
     }
     if(WIFEXITED(status)) deletejob(jobs,pid);
@@ -372,7 +367,7 @@ void sigint_handler(int sig)
 {
   pid_t pid = fgpid(jobs);
   kill(-pid,sig);
-  printf("Job [%d] (%d) terminated by signal %d\n", pid2jid(pid), pid, sig);
+ // printf("Job [%d] (%d) terminated by signal %d\n", pid2jid(pid), pid, sig);
   return;
 
 }
@@ -387,7 +382,7 @@ void sigtstp_handler(int sig)
   pid_t pid = fgpid(jobs);
   kill(-pid,sig);
   getjobpid(jobs, pid)->state = ST;
-  printf("Job [%d] (%d) stopped by signal %d\n", pid2jid(pid),pid, sig);
+ // printf("Job [%d] (%d) stopped by signal %d\n", pid2jid(pid),pid, sig);
   return;
 }
 
