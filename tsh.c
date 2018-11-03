@@ -1,7 +1,8 @@
 /* 
  * tsh - A tiny shell program with job control
  * 
- * <Put your name and login ID here>
+ * Dylan Banh dbanh@umass.edu
+ * Marisa Liu myliu@umass.edu
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -186,10 +187,11 @@ void eval(char *cmdline)
     }
 
    addjob(jobs,pid,bg,buf);
-    if(bg == 1){
+    if(bg == 1 &&(getjobpid(jobs,pid)!=NULL)){
       int status;
  //     addjob(jobs,pid,bg,buf);
-      if(( waitpid(pid,&status,WUNTRACED)) <0) unix_error("waitfg: waitpid error");
+    //      printf("pid: %d\n\n", pid);
+      if(( waitpid(-1,&status,WUNTRACED)) <0) unix_error("waitfg: waitpid error");
      if(!WIFSTOPPED(status)) deletejob(jobs,pid);     
  //    printf("%d \n", status);
     }
@@ -287,16 +289,19 @@ int builtin_cmd(char **argv)
  */
 void do_bgfg(char **argv) 
 {
-  int curjid =atoi(argv[1] + 1);  
+  int curjid =atoi(argv[1] + 1);
+  struct job_t *curJob = getjobjid(jobs,curjid);  
+  
   if(!strcmp(argv[0], "fg")){
 //    printf("JID: %d\n", curjid);
-    getjobjid(jobs, curjid)->state = FG;
-  printf("PID: %d", getjobjid(jobs,curjid)->pid);
-    kill(getjobjid(jobs, curjid)->pid, SIGCONT);
+    curJob->state = FG;
+  //printf("PID: %d", curJob->pid);
+    kill(curJob->pid, SIGCONT);
+   eval(curJob->cmdline);
   }  
   else if(!strcmp(argv[0], "bg")){
-    getjobjid(jobs, curjid)->state = BG;
-    kill(getjobjid(jobs, curjid)->pid, SIGCONT);
+    curJob->state = BG;
+    kill(curJob->pid, SIGCONT);
   }
   
   return;
@@ -307,7 +312,7 @@ void do_bgfg(char **argv)
  */
 void waitfg(pid_t pid)
 {
-  while(fgpid(jobs)){
+  while(fgpid(jobs)==pid){
     sleep(1);
   }
   //waitpid(pid,NULL,WNOHANG); 
