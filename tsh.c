@@ -283,8 +283,27 @@ int builtin_cmd(char **argv)
  */
 void do_bgfg(char **argv) 
 {
-  int curjid =atoi(argv[1] + 1);
-  struct job_t *curJob = getjobjid(jobs,curjid);  
+  struct job_t *curJob;
+  if(argv[1]==NULL){ 
+    printf("%s command requires PID or %%jobid argument\n", argv[0]);
+    return;
+  }
+  if(isalpha(argv[1][0])){
+    printf("%s: argument must be a PID or %%jobid\n", argv[0]);
+    return;
+  }
+  if(argv[1][0]=='%'){
+     int curjid =atoi(argv[1] + 1);
+     if((curJob = getjobjid(jobs,curjid))==NULL) printf("%s: No such job\n", argv[1]);  
+  }
+  else{
+    int curpid = atoi(argv[1]);
+    if((curJob = getjobpid(jobs, curpid))==NULL) printf("(%s): No such process\n", argv[1]);
+  }
+  if(curJob==NULL){
+
+    return;
+  }
   
   if(!strcmp(argv[0], "fg")){
     curJob->state = FG;
@@ -358,7 +377,7 @@ void sigtstp_handler(int sig)
 {
   pid_t pid = fgpid(jobs);
   kill(-pid,sig);
-//  getjobpid(jobs, pid)->state = ST;
+  getjobpid(jobs, pid)->state = ST;
   printf("Job [%d] (%d) stopped by signal %d\n", pid2jid(pid),pid, sig);
   return;
 }
