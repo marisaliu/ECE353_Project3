@@ -189,20 +189,14 @@ void eval(char *cmdline)
    addjob(jobs,pid,bg,buf);
     if(bg == 1 &&(getjobpid(jobs,pid)!=NULL)){
       int status;
- //     addjob(jobs,pid,bg,buf);
-    //      printf("pid: %d\n\n", pid);
       if(( waitpid(-1,&status,WUNTRACED)) <0) unix_error("waitfg: waitpid error");
-     if(!WIFSTOPPED(status)) deletejob(jobs,pid);     
- //    printf("%d \n", status);
+      if(!WIFSTOPPED(status)) deletejob(jobs,pid);
     }
     else{
-   //   addjob(jobs, pid, bg, buf);    
-// waitfg(pid);
       printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
         }
-  
+  // addjob(jobs,pid,bg,buf); 
   }
-//listjobs(jobs);
    return;
 }
 
@@ -293,15 +287,15 @@ void do_bgfg(char **argv)
   struct job_t *curJob = getjobjid(jobs,curjid);  
   
   if(!strcmp(argv[0], "fg")){
-//    printf("JID: %d\n", curjid);
     curJob->state = FG;
-  //printf("PID: %d", curJob->pid);
-    kill(curJob->pid, SIGCONT);
-   eval(curJob->cmdline);
+    if(kill(-curJob->pid, SIGCONT)< 0){
+      printf("fg %s: no such job\n", argv[1]);
+    }
+    waitfg(curJob->pid);
   }  
   else if(!strcmp(argv[0], "bg")){
     curJob->state = BG;
-    kill(curJob->pid, SIGCONT);
+    kill(-curJob->pid, SIGCONT);
   }
   
   return;
@@ -314,8 +308,7 @@ void waitfg(pid_t pid)
 {
   while(fgpid(jobs)==pid){
     sleep(1);
-  }
-  //waitpid(pid,NULL,WNOHANG); 
+  } 
    return;
 }
 
@@ -330,20 +323,15 @@ void waitfg(pid_t pid)
  *     available zombie children, but doesn't wait for any other
  *     currently running children to terminate.  
  */
-void sigchld_handler(int sig) 
-{
-  int olderrno = errno;
+void sigchld_handler(int sig){
   pid_t pid;
+  int status;
   while((pid = waitpid(-1, NULL,WNOHANG )) >0) {
-   // deletejob(jobs, pid);
-   //sio_puts("Handler reaped child\n");
+    if(WIFSTOPPED(status)) getjobpid(jobs,pid)->state = ST;
+   // if(WIFSIGNALED(status)) deletejob(jobs,pid);
+  //  if(WIFEXITED(status)) deletejob(jobs,pid);
   }
-  if(errno != ECHILD)
-    //sio_error("waitpid error");
-  sleep(1);
-//printf("CHILD REAP");
-   errno = olderrno;   
-  
+ 
   return;
 }
 
@@ -368,11 +356,9 @@ void sigint_handler(int sig)
  */
 void sigtstp_handler(int sig) 
 {
-//listjobs(jobs);
   pid_t pid = fgpid(jobs);
   kill(-pid,sig);
-  getjobpid(jobs, pid)->state = ST;
-//listjobs(jobs);
+//  getjobpid(jobs, pid)->state = ST;
   printf("Job [%d] (%d) stopped by signal %d\n", pid2jid(pid),pid, sig);
   return;
 }
