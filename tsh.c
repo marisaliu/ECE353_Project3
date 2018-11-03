@@ -187,15 +187,17 @@ void eval(char *cmdline)
     }
 
    addjob(jobs,pid,bg,buf);
-    if(bg == 1 &&(getjobpid(jobs,pid)!=NULL)){
-      int status;
-      if(( waitpid(-1,&status,WUNTRACED)) <0) unix_error("waitfg: waitpid error");
-      if(!WIFSTOPPED(status)) deletejob(jobs,pid);
-    }
+    if(bg==1){
+   // if(bg == 1 &&(getjobpid(jobs,pid)!=NULL)){
+     // int status;
+     // if(( waitpid(pid,&status,WUNTRACED)) <0) unix_error("waitfg: waitpid error");
+//      if(!WIFSTOPPED(status)) deletejob(jobs,pid);
+    waitfg(pid);  
+  }
     else{
       printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
         }
-  // addjob(jobs,pid,bg,buf); 
+//   addjob(jobs,pid,bg,buf); 
   }
    return;
 }
@@ -274,7 +276,6 @@ int builtin_cmd(char **argv)
     do_bgfg(argv);
     return 1;
   }
-//i  if(!strcmp(argv[0], "&")) return 1;
  return 0;     /* not a builtin command */
 }
 
@@ -345,10 +346,18 @@ void waitfg(pid_t pid)
 void sigchld_handler(int sig){
   pid_t pid;
   int status;
-  while((pid = waitpid(-1, NULL,WNOHANG )) >0) {
-    if(WIFSTOPPED(status)) getjobpid(jobs,pid)->state = ST;
-   // if(WIFSIGNALED(status)) deletejob(jobs,pid);
-  //  if(WIFEXITED(status)) deletejob(jobs,pid);
+  struct job_t *curJob;
+  while((pid = waitpid(-1, &status,WNOHANG|WUNTRACED )) >0) {
+    curJob = getjobpid(jobs,pid);
+    if(WIFSTOPPED(status)){
+       curJob->state = ST;
+   //    printf("Job [%d] (%d) stopped by signal 20\n", curJob->jid, curJob->pid);
+    }
+    if(WIFSIGNALED(status)){
+ //     printf("Job [%d] (%d) terminated by signal 2\n",curJob->jid, curJob->pid);
+      deletejob(jobs,pid);
+    }
+    if(WIFEXITED(status)) deletejob(jobs,pid);
   }
  
   return;
